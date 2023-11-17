@@ -3,6 +3,10 @@ LocalNews bot is a project that arose as an idea to improve my python skills and
 This is a Telegram bot that fetches and sends local news headlines to users. It supports fetching headlines from a news website as well as a YouTube channel.
 Si quieres resetear el Bot comand /start @LocalNewsBot
 
+### ⚠️ Bot is currently not deployed ⚠️
+<p align="center">
+<img style="display: block; margin: 0 auto;" src="https://github.com/alicia-basulto/LocalNews-bot/assets/37553654/92539c7e-fe2a-43f7-bbe8-19ac7e407dd9" alt="Logo de mi proyecto" width="50%" />
+</p>
 ### Authors
 * Alicia Basulto
 
