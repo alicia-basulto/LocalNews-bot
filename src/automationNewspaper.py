@@ -1,3 +1,4 @@
+# Import required libraries
 import requests
 from bs4 import BeautifulSoup
 from telegram import Bot
@@ -9,17 +10,18 @@ import os
 import telebot
 from telebot.types import InlineKeyboardMarkup, InlineKeyboardButton
 import googleapiclient.discovery
+# Load environment variables
 load_dotenv()
-#Youtube API token
+# Retrieve YouTube API token from environment variables
 api_youtube = os.getenv("API_YOUTUBE")
 
-# Crea un cliente de la API de YouTube utilizando tu clave de API
+# Create YouTube API client
 youtube = googleapiclient.discovery.build("youtube", "v3", developerKey=api_youtube)
 
-# Nombre de usuario del canal de YouTube
+# Retrieve channel ID from channel username
 channel_username = "TelemedinaCanal9"
 
-# Primero, obtén el ID del canal a partir del nombre de usuario
+# Check if channel was found
 channels_response = youtube.channels().list(
     part="id",
     forUsername=channel_username
@@ -40,35 +42,32 @@ if channels_response.get("items"):
     # Itera a través de los resultados e imprime los títulos y URL de los vídeos
     for video in videos["items"]:
         video_title = video["snippet"]["title"]
-        print(f"Nombre del video: {video_title}")
+        
 
-        print()
 else:
     print("No se encontró un canal con el nombre de usuario proporcionado.")
 
 
-
-
-#Telegram Bot API token
+# Retrieve Telegram Bot API token from environment variables
 api_secret = os.getenv("API_SECRET")
 API_TOKEN = api_secret
 
 # URL of the webpage to extract data from
 URL = "https://www.lavozdemedinadigital.com/wordpress/category/medina-del-campo/"
-print(API_TOKEN)
 bot = telebot.TeleBot(API_TOKEN)
 logger = startLogger()
 
-# Create an Updater instance
-#updater = Updater(API_TOKEN)
-#dispatcher = updater.dispatcher
-
-
+# Define commands for the bot
 commands = {  # command description used in the "help" command
     'start': 'Start the bot',
     'help': 'Request help'
 }
 
+
+#TODO user introduces link from youtube and news web customized
+#TODO user introduces the number of news to see
+#TODO bot saves the user status
+#TODO bot sends notifications every time upcoming news are uploaded in the web
 if __name__ == '__main__':
     @bot.message_handler(commands=['start'])
     def send_welcome(message):
@@ -78,36 +77,73 @@ if __name__ == '__main__':
                          parse_mode="HTML")
         markup = create_buttons()
         bot.send_message(message.chat.id, "Hi! What are the news that you want to see?", reply_markup=markup)
-
+    # Define function to create reply keyboard with buttons
     def create_buttons():
         markup = types.ReplyKeyboardMarkup(row_width=2)
         item1 = types.KeyboardButton("Youtube")
         item2 = types.KeyboardButton("Newspaper")
         markup.add(item1, item2)
         return markup
+    # Define function to retrieve news titles from a website
+    def get_news_titles(news_site):
     
+        response = requests.get(news_site)
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        titles_and_links = {}
+        limit=5
+        for index, headline in enumerate(soup.find_all('h3')):
+           title = headline.text.strip()
+           link_element = headline.find('a')
+           
+           link = link_element['href'] if link_element else None
+
+           titles_and_links[title] = link
+           
+           if index + 1 == limit:
+               break
+        return titles_and_links
+
+
+
     @bot.message_handler(func=lambda action: True)
     def echo_all(action):
         try:
-            print (action.text)
+            
             if action.text == "Youtube":
+                
+                limit_Youtube = 5
                 bot.send_message(action.chat.id, "The headlines on Youtube are:")
                  # Itera a través de los resultados e imprime los títulos y URL de los vídeos
                 for video in videos["items"]:
+                    
                     video_title = video["snippet"]["title"]
                     video_Id = video["id"]["videoId"]
                     video_url = f"https://www.youtube.com/watch?v={video_Id}"
                     bot.send_message(action.chat.id, video_title)
                     bot.send_message(action.chat.id, video_url)
+
+                    if limit_Youtube + 1 == limit_Youtube:
+                       break
                    
                 
             elif action.text == "Newspaper":
+                
                 bot.send_message(action.chat.id, "The headlines on the newspaper are:")
+                news_site = 'https://www.lavozdemedinadigital.com/wordpress/' 
+                titles = get_news_titles(news_site)
+               
+               
+                for key, value in titles.items():
+                  
+                  bot.send_message(action.chat.id, key)
+                  bot.send_message(action.chat.id, value)
+
 
         except:
             bot.send_message(action.chat.id, "Could you repeat")
     
-
+    # Define function to handle /help command
     @bot.message_handler(commands=['help'])
     def help_command(message):
         cid = message.chat.id
@@ -116,6 +152,7 @@ if __name__ == '__main__':
             help_text += "/" + key + ": "
             help_text += commands[key] + "\n"
         bot.send_message(cid, help_text)
+    # Start the bot
     bot.polling()
 
 
